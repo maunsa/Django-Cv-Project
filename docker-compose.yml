@@ -1,0 +1,41 @@
+
+services:
+  postgres:
+    image: postgres:latest
+    env_file:
+      - Course_Django_Project/docker.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - "postgresql-data:/var/lib/postgresql/data"
+    command: -p 5432
+
+  app:
+    container_name: app_resume
+    hostname: app_resume
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    env_file:
+      - Course_Django_Project/docker.env
+    volumes:
+      - .:/srv/app  # Tüm proje klasörünü bağla, böylece dosya değişiklikleri anında yansır
+      - static-data:/srv/app/static  # Statik dosyalar için ayrı bir volume
+    ports:
+      - "8000:8000"
+    command: gunicorn Course_Django_Project.wsgi:application --bind 0.0.0.0:8000
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+
+volumes:
+  postgresql-data:
+  static-data:
